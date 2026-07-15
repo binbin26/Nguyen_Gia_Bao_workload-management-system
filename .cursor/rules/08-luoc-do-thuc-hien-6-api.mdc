@@ -1,0 +1,32 @@
+---
+description: Quy trình triển khai tuần tự cho bộ 6 API cốt lõi của dự án AI Workforce Management
+globs: **/*.py
+alwaysApply: false
+---
+
+# Quy trình triển khai 6 API cốt lõi
+
+Khi bắt đầu implement từ đầu hoặc mở rộng tính năng mới, hãy làm theo thứ tự sau để tránh code lộn xộn và bỏ sót ràng buộc nghiệp vụ.
+
+## Giai đoạn 0 — Nền tảng
+1. Đảm bảo MongoDB chạy ở chế độ replica set, kể cả local development.
+2. Chuẩn hóa schema và model theo các rule đã có ở `01-mongodb-schema-du-lieu.mdc`.
+3. Xây dựng dependency `verify_workload_capacity()` đúng theo logic cộng trước khi so sánh.
+
+## Giai đoạn 1 — API đơn giản trước
+4. Triển khai `GET /api/v1/dashboard/summary` trước để kiểm tra kết nối DB và aggregation pipeline.
+5. Triển khai `POST /api/v1/tasks` với logic chọn staff bằng greedy MVP (`pick_best_staff`).
+6. Viết unit test cho luồng giao việc trước khi tiếp tục sang API phức tạp hơn.
+
+## Giai đoạn 2 — Transaction và luồng phức tạp
+7. Triển khai `POST /api/v1/tasks/{id}/next-step` trong 1 transaction MongoDB.
+8. Triển khai `GET /api/v1/analytics/overloads` và `POST /api/v1/analytics/resolve-overload` sau khi schema overload đã đúng.
+
+## Giai đoạn 3 — Tự động hóa và vận hành
+9. Triển khai `POST /api/v1/system/daily-reset` và đăng ký scheduler với timezone `Asia/Ho_Chi_Minh`.
+10. Chạy integration test end-to-end: task → next-step → daily-reset → dashboard summary.
+
+## Nguyên tắc quan trọng
+- Chỉ nâng cấp từ greedy sang PuLP khi thật sự cần tối ưu toàn cục cho nhiều task cùng lúc.
+- Không over-engineer PuLP cho trường hợp gán từng task đơn lẻ.
+- Nếu logic rơi vào tình huống infeasible hoặc không tìm được staff hợp lệ, phải có fallback và ghi log overload thay vì crash service.

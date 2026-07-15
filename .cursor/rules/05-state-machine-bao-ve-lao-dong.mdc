@@ -1,0 +1,27 @@
+---
+description: Quy tắc state machine của task và nguyên tắc bảo vệ lao động khi tính giờ/việc
+globs: **/services/**,**/models/**task**
+alwaysApply: false
+---
+
+# State Machine & Bảo vệ lao động
+
+**Vòng đời `tasks.status`:**
+```
+"Chờ xử lý" ──(PuLP gán được người)──► "Đang xử lý" ──(xong bước cuối)──► "Hoàn thành"
+     │                                        │
+     └──(không ai nhận được)──► ở lại "Chờ xử lý" + tạo overload_log
+                                              └──(next-step không tìm được người ở dept kế tiếp)──► "Tạm dừng"
+"Tạm dừng" ──(resolve-overload duyệt, gán người mới)──► "Đang xử lý"
+Bất kỳ trạng thái nào (trừ "Hoàn thành") ──► "Hủy" (thao tác thủ công của quản lý, ngoài phạm vi 6 API cốt lõi hiện tại)
+```
+`current_step` chỉ tăng dần tuần tự (`current_step + 1`), không bao giờ giảm hoặc nhảy cóc. `workflow_history` là **append-only log**: chỉ thêm phần tử mới hoặc update in-place phần tử của step hiện tại qua positional operator `$`, không xóa.
+
+**`control_flags.is_locked`:** đề xuất dùng để đánh dấu các task đã `"Hoàn thành"` toàn bộ (khóa không cho `resolve-overload` chỉnh sửa `current_assigned_to` của các task đã xong) — set `is_locked = true` cùng lúc set `status = "Hoàn thành"`.
+
+**`control_flags.transfer_count`:** chỉ tăng khi task bị điều chuyển qua `resolve-overload` (Approved_Suggestion hoặc Manual_Override), KHÔNG tăng khi luân chuyển bình thường qua `next-step` (đó là luân chuyển theo SOP, không phải "điều chuyển do quá tải").
+
+## Nguyên tắc bảo vệ lao động — bắt buộc tuân thủ khi code
+1. Hoàn thành sớm được **ghi nhận** (`early_completion_hours`) để dùng cho báo cáo/biểu dương cuối tháng, nhưng **không bao giờ** dùng số giờ tiết kiệm được để tính toán cho phép giao thêm việc trong cùng ngày. Block giờ chuẩn (`step_duration_hours`) đã cộng vào `current_daily_hours` khi giao việc phải giữ nguyên đến hết ngày (chỉ reset về 0 lúc `daily-reset` 00:00), bất kể người đó xong sớm hay đúng giờ.
+2. Ràng buộc 8h/ngày luôn được ưu tiên hơn ràng buộc 5 việc/ngày khi 2 điều kiện xung đột (vd: 1 người mới có 3 việc nhưng đã 7.5h — 1 task mới 1h sẽ bị chặn dù còn dư "chỗ" cho việc thứ 4).
+3. Không thiết kế bất kỳ cơ chế nào cho phép AI/hệ thống tự động "mượn tạm" giờ ngày mai để nhồi việc hôm nay — mọi trường hợp vượt trần đều phải đi qua `overload_logs` + quyết định thủ công của quản lý (`resolve-overload`), không có auto-override ngầm.
