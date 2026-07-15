@@ -1,0 +1,57 @@
+---
+description: Quy ước xử lý lỗi và response contract bắt buộc cho toàn bộ API
+globs: **/*.py
+alwaysApply: false
+---
+
+# Xử lý lỗi và response contract
+
+## Response envelope bắt buộc
+Mọi API phải trả về một envelope thống nhất như sau:
+
+```json
+{
+  "success": true,
+  "data": {"id": "task_123"},
+  "message": "Thao tác thành công",
+  "error_code": null
+}
+```
+
+Với lỗi:
+
+```json
+{
+  "success": false,
+  "data": null,
+  "message": "Cán bộ đã chạm trần lao động",
+  "error_code": "WORKLOAD_CAP_EXCEEDED"
+}
+```
+
+## Nguyên tắc xử lý lỗi
+- Dùng `HTTPException` có `error_code` riêng cho domain errors.
+- Không để FastAPI trả về format `{"detail": ...}` mặc định.
+- Đối với validation lỗi, luôn trả `422` với `error_code: "VALIDATION_ERROR"`.
+- Với auth lỗi, trả `401`/`403` đúng envelope.
+
+## Mẫu exception handler
+```python
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+
+def register_exception_handlers(app: FastAPI):
+    @app.exception_handler(HTTPException)
+    async def http_exc_handler(request: Request, exc: HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "success": False,
+                "data": None,
+                "message": exc.detail,
+                "error_code": getattr(exc, "error_code", None),
+            },
+        )
+```
