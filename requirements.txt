@@ -7,3 +7,4 @@ python-dotenv==1.2.2
 PuLP==2.8.0
 APScheduler==3.10.4
 PyJWT==2.8.0
+bcrypt==4.3.0
