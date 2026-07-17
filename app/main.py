@@ -98,9 +98,11 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     # Include routers
-    from app.api.v1 import analytics, dashboard, system, tasks
+    from app.api.v1 import analytics, auth, dashboard, staffs, system, tasks
 
+    app.include_router(auth.router)
     app.include_router(dashboard.router)
+    app.include_router(staffs.router)
     app.include_router(tasks.router)
     app.include_router(analytics.router)
     app.include_router(system.router)

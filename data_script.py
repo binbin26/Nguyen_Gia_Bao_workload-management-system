@@ -21,6 +21,7 @@ Neu chi muon tao moi (khong xoa du lieu cu), doi RESET_DB = False ben duoi.
 import os
 from datetime import datetime, timezone
 
+import bcrypt
 from pymongo import MongoClient, ASCENDING
 from pymongo.errors import CollectionInvalid
 
@@ -41,6 +42,11 @@ def dt(iso_str):
     if iso_str is None:
         return None
     return datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+
+
+def hash_password(plain_password):
+    """Hash mat khau bang bcrypt truoc khi seed vao MongoDB."""
+    return bcrypt.hashpw(plain_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 # ==========================================================================
@@ -212,6 +218,29 @@ OVERLOAD_LOGS_VALIDATOR = {
                     "resolved_by": {"bsonType": "string"},
                     "details": {"bsonType": "object"},
                 },
+            },
+        },
+    }
+}
+
+USERS_VALIDATOR = {
+    "$jsonSchema": {
+        "bsonType": "object",
+        "title": "users validator",
+        "required": ["_id", "password_hash", "role", "staff_id"],
+        "properties": {
+            "_id": {
+                "bsonType": "string",
+                "description": "Username dang nhap, vd manager_01 hoac staff_a2",
+            },
+            "password_hash": {
+                "bsonType": "string",
+                "description": "Mat khau da bam bang bcrypt",
+            },
+            "role": {"bsonType": "string", "enum": ["manager", "staff"]},
+            "staff_id": {
+                "bsonType": ["string", "null"],
+                "description": "Tro toi staffs._id neu role=staff; null neu role=manager",
             },
         },
     }
@@ -495,6 +524,28 @@ STAFFS = [
      "status": "Sẵn sàng"},
 ]
 
+
+def build_seed_users(default_password="password123"):
+    password_hash = hash_password(default_password)
+    users = [
+        {
+            "_id": "manager_01",
+            "password_hash": password_hash,
+            "role": "manager",
+            "staff_id": None,
+        }
+    ]
+    users.extend(
+        {
+            "_id": staff["_id"],
+            "password_hash": hash_password(default_password),
+            "role": "staff",
+            "staff_id": staff["_id"],
+        }
+        for staff in STAFFS
+    )
+    return users
+
 # ==========================================================================
 # 4. DU LIEU MAU: tasks (minh hoa state machine o nhieu trang thai khac nhau)
 # ==========================================================================
@@ -653,6 +704,7 @@ def main():
     create_collection_with_validator(db, "staffs", STAFFS_VALIDATOR)
     create_collection_with_validator(db, "tasks", TASKS_VALIDATOR)
     create_collection_with_validator(db, "overload_logs", OVERLOAD_LOGS_VALIDATOR)
+    create_collection_with_validator(db, "users", USERS_VALIDATOR)
 
     print("Dang tao indexes...")
     db.task_categories.create_index([("task_code", ASCENDING)], unique=True)
@@ -669,14 +721,18 @@ def main():
     db.overload_logs.create_index([("staff_id", ASCENDING)])
     db.overload_logs.create_index([("timestamp", ASCENDING)])
 
+    db.users.create_index([("role", ASCENDING)])
+    db.users.create_index([("staff_id", ASCENDING)])
+
     print("Dang chen du lieu mau...")
     db.task_categories.insert_many(TASK_CATEGORIES)
     db.staffs.insert_many(STAFFS)
     db.tasks.insert_many(TASKS)
     db.overload_logs.insert_many(OVERLOAD_LOGS)
+    db.users.insert_many(build_seed_users())
 
     print("\n=== TOM TAT ===")
-    for name in ["task_categories", "staffs", "tasks", "overload_logs"]:
+    for name in ["task_categories", "staffs", "tasks", "overload_logs", "users"]:
         print(f"  {name:<16}: {db[name].count_documents({})} documents")
 
     client.close()

@@ -66,6 +66,12 @@ async def get_task_by_id(
     return await db.tasks.find_one({"_id": task_id}, session=session)
 
 
+async def get_tasks(db: AsyncIOMotorDatabase) -> list[dict[str, Any]]:
+    """Return all task documents, newest first."""
+    cursor = db.tasks.find({}).sort("timestamps.created_at", -1)
+    return await cursor.to_list(length=None)
+
+
 async def decrement_staff_task_count(
     db: AsyncIOMotorDatabase,
     staff_id: str,

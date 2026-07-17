@@ -13,7 +13,7 @@ from starlette import status
 from app.api.dependencies import get_current_user, require_role
 from app.core.database import get_database, get_motor_client
 from app.core.exceptions import AppHTTPException
-from app.repositories.task_repository import create_task
+from app.repositories.task_repository import create_task, get_tasks
 from app.schemas.base_envelope import ApiResponse, success_response
 from app.schemas.task import (
     TaskCreateRequest,
@@ -31,6 +31,20 @@ from app.services.task_service import (
 )
 
 router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])
+
+
+@router.get(
+    "",
+    response_model=ApiResponse[list[TaskOut]],
+    dependencies=[Depends(require_role("manager"))],
+    summary="Danh sách toàn bộ hồ sơ",
+)
+async def list_tasks_endpoint(
+    user: dict = Depends(get_current_user),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+) -> ApiResponse[list[TaskOut]]:
+    tasks = await get_tasks(db)
+    return success_response(data=[TaskOut.model_validate(task) for task in tasks])
 
 
 @router.post(

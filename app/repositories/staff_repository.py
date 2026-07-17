@@ -12,6 +12,17 @@ from typing import Optional
 from app.schemas.staff import Department
 
 
+async def get_staffs(db: AsyncIOMotorDatabase) -> list[dict]:
+    """
+    Retrieve all staff documents for manager workload monitoring.
+
+    Sorted by department then fullname so the dashboard renders consistently.
+    """
+    return await db.staffs.find({}).sort(
+        [("department", 1), ("fullname", 1)]
+    ).to_list(None)
+
+
 async def get_dashboard_summary(
     db: AsyncIOMotorDatabase,
     department: Optional[Department] = None,

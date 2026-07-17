@@ -35,6 +35,10 @@ class StaffOut(StaffBase):
     id: str = Field(alias="_id")
 
 
+class StaffListResponse(BaseModel):
+    staffs: list[StaffOut]
+
+
 class StaffInDB(StaffOut):
     """Full staff document as stored in MongoDB."""
 
