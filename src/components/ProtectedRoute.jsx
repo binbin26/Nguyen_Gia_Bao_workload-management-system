@@ -7,7 +7,17 @@ export default function ProtectedRoute({
   children,
 }) {
   const location = useLocation();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isInitializing, user } = useAuth();
+
+  if (isInitializing) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-slate-50">
+        <p className="text-sm text-slate-600" role="status">
+          Đang kiểm tra phiên đăng nhập...
+        </p>
+      </main>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;

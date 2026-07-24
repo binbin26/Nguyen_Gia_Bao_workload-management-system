@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -16,6 +17,7 @@ from app.core.database import (
     get_motor_client,
 )
 from app.cron.daily_reset_job import run_daily_reset
+from app.middleware.security import SecurityMiddleware
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -95,16 +97,31 @@ def create_app() -> FastAPI:
         debug=settings.DEBUG,
         lifespan=lifespan,
     )
+
+    # Runs on every application response and enforces CSRF on browser mutations.
+    app.add_middleware(SecurityMiddleware)
+
+    # Credentialed CORS must use an explicit allow-list; wildcard origins and
+    # cookies are intentionally not combined.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.CORS_ALLOWED_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "X-CSRF-Token"],
+    )
+
     register_exception_handlers(app)
 
     # Include routers
-    from app.api.v1 import analytics, auth, dashboard, staffs, system, tasks
+    from app.api.v1 import analytics, auth, dashboard, realtime, staffs, system, tasks
 
     app.include_router(auth.router)
     app.include_router(dashboard.router)
     app.include_router(staffs.router)
     app.include_router(tasks.router)
     app.include_router(analytics.router)
+    app.include_router(realtime.router)
     app.include_router(system.router)
 
     @app.get("/health", tags=["system"])

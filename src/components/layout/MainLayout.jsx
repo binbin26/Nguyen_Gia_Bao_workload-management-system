@@ -1,8 +1,12 @@
 import { Outlet } from "react-router-dom";
 
+import useRealtime from "../../hooks/useRealtime";
 import Sidebar from "./Sidebar";
 
 export default function MainLayout() {
+  // Mounted once for the authenticated manager area, not once per page/card.
+  useRealtime();
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950">
       <Sidebar />

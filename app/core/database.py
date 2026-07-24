@@ -22,6 +22,10 @@ async def connect_to_mongo() -> None:
 
     await _client.admin.command("ping")
     _db = _client[settings.MONGO_DB_NAME]
+    # Refresh sessions are server-revocable. MongoDB's TTL index removes stale
+    # records automatically; the compound index supports session cleanup/audit.
+    await _db.refresh_sessions.create_index("expires_at", expireAfterSeconds=0)
+    await _db.refresh_sessions.create_index([("user_id", 1), ("session_id", 1)])
     try:
             logger.info(
             "Connected to MongoDB replica set '%s', database '%s'",

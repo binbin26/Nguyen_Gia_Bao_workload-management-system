@@ -1,5 +1,11 @@
 import { authHttp } from "./auth_api";
 
+// This exact constant is shared by useQuery and every invalidation site.
+export const OVERLOAD_ALERTS_QUERY_KEY = Object.freeze([
+  "analytics",
+  "overloads",
+]);
+
 function unwrapOverloads(payload) {
   const data = payload?.data;
 

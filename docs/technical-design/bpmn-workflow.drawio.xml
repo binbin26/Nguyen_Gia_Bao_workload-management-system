@@ -1,0 +1,555 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Xác thực và phân quyền" id="bpmn-auth">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="auth_lane_user" value="Người dùng" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1040" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_lane_fe" value="Giao diện React" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="180" width="1040" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_lane_api" value="API xác thực FastAPI" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="350" width="1040" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_start" value="Bắt đầu" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="auth_lane_user">
+          <mxGeometry x="40" y="55" width="44" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_enter" value="Nhập username và password" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="auth_lane_user">
+          <mxGeometry x="120" y="45" width="150" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_post" value="POST /api/v1/auth/login" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="auth_lane_fe">
+          <mxGeometry x="300" y="55" width="160" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_store" value="Lưu auth_token và auth_user" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="auth_lane_fe">
+          <mxGeometry x="720" y="45" width="150" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_role_gw" value="X" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="auth_lane_fe">
+          <mxGeometry x="900" y="52" width="54" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_end_manager" value="Dashboard" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=3;" vertex="1" parent="auth_lane_fe">
+          <mxGeometry x="980" y="35" width="72" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_end_staff" value="Về login" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=3;" vertex="1" parent="auth_lane_fe">
+          <mxGeometry x="980" y="95" width="72" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_find" value="Tìm user theo _id" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="auth_lane_api">
+          <mxGeometry x="300" y="45" width="130" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_verify" value="Verify bcrypt password_hash" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="auth_lane_api">
+          <mxGeometry x="470" y="45" width="150" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_valid_gw" value="X" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="auth_lane_api">
+          <mxGeometry x="650" y="48" width="54" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_issue" value="Tạo JWT có exp và role" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="auth_lane_api">
+          <mxGeometry x="720" y="45" width="150" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_401" value="Trả 401 INVALID_CREDENTIALS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="auth_lane_api">
+          <mxGeometry x="650" y="115" width="160" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_error" value="Hiển thị lỗi đăng nhập" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="auth_lane_fe">
+          <mxGeometry x="540" y="110" width="150" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_source" value="Nguồn: app/api/v1/auth.py; app/services/auth_service.py; app/api/dependencies.py; src/context/AuthContext.jsx; src/pages/Login.jsx" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="550" width="1040" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_e1" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="auth_lane_user" source="auth_start" target="auth_enter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_e2" value="Gửi form" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="auth_enter" target="auth_post">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_e3" value="Gọi API" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="auth_post" target="auth_find">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_e4" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="auth_lane_api" source="auth_find" target="auth_verify">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_e5" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="auth_lane_api" source="auth_verify" target="auth_valid_gw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_e6" value="hợp lệ" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="auth_lane_api" source="auth_valid_gw" target="auth_issue">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_e7" value="không" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="auth_lane_api" source="auth_valid_gw" target="auth_401">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_e8" value="401" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="auth_401" target="auth_error">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_e9" value="JWT" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="auth_issue" target="auth_store">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_e10" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="auth_lane_fe" source="auth_store" target="auth_role_gw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_e11" value="manager" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="auth_lane_fe" source="auth_role_gw" target="auth_end_manager">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="auth_e12" value="staff theo UI hiện tại" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="auth_lane_fe" source="auth_role_gw" target="auth_end_staff">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="Tạo hồ sơ và phân công" id="bpmn-create-task">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ct_lane_actor" value="Staff hoặc Manager" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1040" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_lane_api" value="API hồ sơ FastAPI" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="160" width="1040" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_lane_assign" value="Dịch vụ chọn nhân sự" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="330" width="1040" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_lane_db" value="MongoDB" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="450" width="1040" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_start" value="Bắt đầu" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="ct_lane_actor">
+          <mxGeometry x="40" y="38" width="44" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_submit" value="Gửi task_code" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ct_lane_actor">
+          <mxGeometry x="120" y="30" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_auth" value="Kiểm tra JWT role staff hoặc manager" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ct_lane_api">
+          <mxGeometry x="280" y="38" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_load_cat" value="Đọc task_categories theo task_code" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ct_lane_db">
+          <mxGeometry x="470" y="35" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_cat_gw" value="X" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="ct_lane_api">
+          <mxGeometry x="665" y="40" width="54" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_404" value="Trả 404 TASK_CATEGORY_NOT_FOUND" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="ct_lane_api">
+          <mxGeometry x="745" y="110" width="180" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_load_staffs" value="Đọc staffs cùng department bước 1" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ct_lane_db">
+          <mxGeometry x="745" y="35" width="170" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_pick" value="Chọn staff ETC thấp nhất còn capacity" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ct_lane_assign">
+          <mxGeometry x="745" y="30" width="190" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_staff_gw" value="X" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="ct_lane_api">
+          <mxGeometry x="940" y="40" width="54" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_tx_assigned" value="Giao dịch: insert task Đang xử lý và tăng workload staff" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ct_lane_db">
+          <mxGeometry x="785" y="105" width="210" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_tx_waiting" value="Giao dịch: insert task Chờ xử lý và overload_log Pending" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ct_lane_db">
+          <mxGeometry x="540" y="105" width="220" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_end_assigned" value="Đã giao việc" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=3;" vertex="1" parent="ct_lane_api">
+          <mxGeometry x="965" y="112" width="82" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_end_waiting" value="Chờ xử lý" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=3;" vertex="1" parent="ct_lane_api">
+          <mxGeometry x="520" y="112" width="82" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_source" value="Nguồn: app/api/v1/tasks.py; app/repositories/task_repository.py; app/services/assignment_service.py; app/repositories/log_repository.py" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="640" width="1040" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_e1" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="ct_lane_actor" source="ct_start" target="ct_submit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_e2" value="POST /tasks" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ct_submit" target="ct_auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_e3" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ct_auth" target="ct_load_cat">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_e4" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ct_load_cat" target="ct_cat_gw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_e5" value="không thấy" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="ct_lane_api" source="ct_cat_gw" target="ct_404">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_e6" value="có SOP" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ct_cat_gw" target="ct_load_staffs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_e7" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ct_load_staffs" target="ct_pick">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_e8" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ct_pick" target="ct_staff_gw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_e9" value="có staff" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ct_staff_gw" target="ct_tx_assigned">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_e10" value="không có staff" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ct_staff_gw" target="ct_tx_waiting">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_e11" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ct_tx_assigned" target="ct_end_assigned">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ct_e12" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ct_tx_waiting" target="ct_end_waiting">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="Luân chuyển bước" id="bpmn-next-step">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ns_lane_actor" value="Staff hoặc Manager" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1040" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_lane_api" value="API hồ sơ FastAPI" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="150" width="1040" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_lane_db" value="Giao dịch MongoDB" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="360" width="1040" height="210" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_lane_assign" value="Dịch vụ chọn nhân sự" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="570" width="1040" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_start" value="Bắt đầu" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="ns_lane_actor">
+          <mxGeometry x="40" y="35" width="44" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_submit" value="POST /tasks/{task_id}/next-step" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ns_lane_actor">
+          <mxGeometry x="120" y="27" width="185" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_auth" value="Kiểm tra role và object-level assignee" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ns_lane_api">
+          <mxGeometry x="330" y="35" width="190" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_load" value="Đọc task và task_category" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ns_lane_db">
+          <mxGeometry x="540" y="30" width="160" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_valid_gw" value="X" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="ns_lane_api">
+          <mxGeometry x="720" y="38" width="54" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_error" value="Trả 404, 403 hoặc 409" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="ns_lane_api">
+          <mxGeometry x="805" y="105" width="150" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_complete" value="Cập nhật workflow_history bước hiện tại thành Hoàn thành" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ns_lane_db">
+          <mxGeometry x="805" y="25" width="210" height="66" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_release" value="Giảm current_daily_tasks của assignee cũ" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ns_lane_db">
+          <mxGeometry x="805" y="105" width="190" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_final_gw" value="X" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="ns_lane_api">
+          <mxGeometry x="600" y="130" width="54" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_set_done" value="Set task Hoàn thành và is_locked" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ns_lane_db">
+          <mxGeometry x="470" y="110" width="170" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_end_done" value="Hoàn thành" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=3;" vertex="1" parent="ns_lane_api">
+          <mxGeometry x="430" y="145" width="85" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_pick" value="Chọn staff cho bước kế tiếp" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ns_lane_assign">
+          <mxGeometry x="600" y="18" width="180" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_staff_gw" value="X" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="ns_lane_api">
+          <mxGeometry x="760" y="130" width="54" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_pause" value="Set Tạm dừng và tạo overload_log Pending" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ns_lane_db">
+          <mxGeometry x="680" y="158" width="210" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_update_next" value="Push history bước mới và tăng workload staff mới" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ns_lane_db">
+          <mxGeometry x="900" y="158" width="200" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_end_pause" value="Tạm dừng" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=3;" vertex="1" parent="ns_lane_api">
+          <mxGeometry x="680" y="160" width="85" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_end_next" value="Đang xử lý bước mới" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=3;" vertex="1" parent="ns_lane_api">
+          <mxGeometry x="940" y="160" width="115" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_source" value="Nguồn: app/api/v1/tasks.py; app/services/task_service.py; app/repositories/task_repository.py; app/services/assignment_service.py; app/repositories/log_repository.py" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="690" width="1040" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e1" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="ns_lane_actor" source="ns_start" target="ns_submit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e2" value="Gọi API" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ns_submit" target="ns_auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e3" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ns_auth" target="ns_load">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e4" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ns_load" target="ns_valid_gw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e5" value="không hợp lệ" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="ns_lane_api" source="ns_valid_gw" target="ns_error">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e6" value="hợp lệ" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ns_valid_gw" target="ns_complete">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e7" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="ns_lane_db" source="ns_complete" target="ns_release">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e8" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ns_release" target="ns_final_gw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e9" value="bước cuối" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ns_final_gw" target="ns_set_done">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e10" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ns_set_done" target="ns_end_done">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e11" value="còn bước" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ns_final_gw" target="ns_pick">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e12" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ns_pick" target="ns_staff_gw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e13" value="không có staff" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ns_staff_gw" target="ns_pause">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e14" value="có staff" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ns_staff_gw" target="ns_update_next">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e15" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ns_pause" target="ns_end_pause">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ns_e16" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ns_update_next" target="ns_end_next">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="Xử lý cảnh báo quá tải" id="bpmn-overload">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ov_lane_manager" value="Manager" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1040" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_lane_api" value="API phân tích FastAPI" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="170" width="1040" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_lane_suggest" value="Logic gợi ý điều phối" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="360" width="1040" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_lane_db" value="Giao dịch MongoDB" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="470" width="1040" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_start" value="Bắt đầu" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="ov_lane_manager">
+          <mxGeometry x="40" y="40" width="44" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_open" value="Mở màn hình cảnh báo" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ov_lane_manager">
+          <mxGeometry x="115" y="32" width="135" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_get" value="GET /analytics/overloads" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ov_lane_api">
+          <mxGeometry x="280" y="35" width="160" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_query" value="Query overload_logs Pending và ngữ cảnh task" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ov_lane_db">
+          <mxGeometry x="460" y="32" width="210" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_suggest" value="Tính matching_score và sort giảm dần" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ov_lane_suggest">
+          <mxGeometry x="700" y="28" width="190" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_cards" value="Hiển thị card và gợi ý" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ov_lane_manager">
+          <mxGeometry x="915" y="32" width="135" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_select" value="Chọn staff và phê duyệt" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ov_lane_manager">
+          <mxGeometry x="115" y="88" width="160" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_post" value="POST /analytics/overloads/{log_id}/resolve" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ov_lane_api">
+          <mxGeometry x="300" y="120" width="220" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_read" value="Đọc log và task trong transaction" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ov_lane_db">
+          <mxGeometry x="540" y="110" width="190" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_pending_gw" value="X" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="ov_lane_api">
+          <mxGeometry x="750" y="122" width="54" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_error" value="Trả lỗi log đã xử lý hoặc không tồn tại" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="ov_lane_api">
+          <mxGeometry x="830" y="130" width="180" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_action_gw" value="X" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="ov_lane_api">
+          <mxGeometry x="750" y="38" width="54" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_update_log" value="Chỉ cập nhật manager_action" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ov_lane_db">
+          <mxGeometry x="830" y="20" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_validate_staff" value="Kiểm tra selected_staff và department" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ov_lane_db">
+          <mxGeometry x="830" y="75" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_apply" value="Cập nhật workload, task assignment, workflow_history và log" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="ov_lane_db">
+          <mxGeometry x="800" y="128" width="230" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_end" value="Đã resolve" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=3;" vertex="1" parent="ov_lane_manager">
+          <mxGeometry x="965" y="90" width="82" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_source" value="Nguồn: app/api/v1/analytics.py; app/services/analytics_service.py; app/schemas/overload_log.py; src/pages/OverloadAlerts.jsx; src/components/analytics/AIResolutionModal.jsx" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="675" width="1040" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e1" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="ov_lane_manager" source="ov_start" target="ov_open">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e2" value="Gọi API" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ov_open" target="ov_get">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e3" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ov_get" target="ov_query">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e4" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ov_query" target="ov_suggest">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e5" value="Danh sách cảnh báo" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ov_suggest" target="ov_cards">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e6" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="ov_lane_manager" source="ov_cards" target="ov_select">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e7" value="Gọi API" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ov_select" target="ov_post">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e8" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ov_post" target="ov_read">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e9" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ov_read" target="ov_pending_gw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e10" value="không pending" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="ov_lane_api" source="ov_pending_gw" target="ov_error">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e11" value="pending" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="ov_lane_api" source="ov_pending_gw" target="ov_action_gw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e12" value="Rejected hoặc Pending" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ov_action_gw" target="ov_update_log">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e13" value="Approved hoặc Manual" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ov_action_gw" target="ov_validate_staff">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e14" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="ov_lane_db" source="ov_validate_staff" target="ov_apply">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e15" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ov_apply" target="ov_end">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_e16" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="ov_update_log" target="ov_end">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="Tái lập tải lượng hằng ngày" id="bpmn-daily-reset">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="dr_lane_trigger" value="APScheduler hoặc caller nội bộ" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1040" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_lane_api" value="API hệ thống FastAPI" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="170" width="1040" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_lane_cron" value="Dịch vụ cron" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="300" width="1040" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_lane_db" value="Giao dịch MongoDB" style="swimlane;horizontal=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="480" width="1040" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_start_scheduler" value="00:00 Asia/Ho_Chi_Minh" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="dr_lane_trigger">
+          <mxGeometry x="40" y="28" width="95" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_start_internal" value="POST daily-reset nội bộ" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="dr_lane_trigger">
+          <mxGeometry x="40" y="80" width="95" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_secret" value="Kiểm tra X-Internal-Secret" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="dr_lane_api">
+          <mxGeometry x="160" y="75" width="170" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_secret_gw" value="X" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="dr_lane_api">
+          <mxGeometry x="360" y="70" width="54" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_forbidden" value="Trả 403 hoặc 500" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="dr_lane_api">
+          <mxGeometry x="440" y="78" width="130" height="38" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_run" value="run_daily_reset" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="dr_lane_cron">
+          <mxGeometry x="180" y="45" width="130" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_lock" value="Giữ lock system_state daily_reset" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="dr_lane_db">
+          <mxGeometry x="340" y="35" width="190" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_ran_gw" value="X" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="dr_lane_cron">
+          <mxGeometry x="555" y="46" width="54" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_skipped" value="Bỏ qua" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=3;" vertex="1" parent="dr_lane_cron">
+          <mxGeometry x="630" y="52" width="80" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_reset_staffs" value="Reset workload_caps của tất cả staffs" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="dr_lane_db">
+          <mxGeometry x="630" y="35" width="190" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_find_tasks" value="Tìm tasks status Đang xử lý" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="dr_lane_db">
+          <mxGeometry x="840" y="35" width="170" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_task_gw" value="X" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="dr_lane_cron">
+          <mxGeometry x="840" y="112" width="54" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_chunk" value="Tính chunked_hours và cập nhật remaining_step_hours" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="dr_lane_cron">
+          <mxGeometry x="650" y="105" width="180" height="62" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_bulk_tasks" value="Bulk write tasks" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="dr_lane_db">
+          <mxGeometry x="650" y="120" width="145" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_bulk_staffs" value="Bulk write tổng tải lượng staffs" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="dr_lane_db">
+          <mxGeometry x="815" y="120" width="165" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_end" value="Hoàn tất" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;strokeWidth=3;" vertex="1" parent="dr_lane_cron">
+          <mxGeometry x="990" y="116" width="80" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_source" value="Nguồn: app/main.py; app/api/v1/system.py; app/cron/daily_reset_job.py; tests/unit_test/test_daily_reset_job.py; tests/unit_test/test_scheduler.py" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="700" width="1040" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e1" value="scheduler gọi trực tiếp" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="dr_start_scheduler" target="dr_run">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e2" value="Gọi HTTP nội bộ" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="dr_start_internal" target="dr_secret">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e3" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="dr_lane_api" source="dr_secret" target="dr_secret_gw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e4" value="sai secret" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="dr_lane_api" source="dr_secret_gw" target="dr_forbidden">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e5" value="hợp lệ" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="dr_secret_gw" target="dr_run">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e6" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="dr_run" target="dr_lock">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e7" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="dr_lock" target="dr_ran_gw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e8" value="đã chạy" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="dr_lane_cron" source="dr_ran_gw" target="dr_skipped">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e9" value="chưa chạy" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="dr_ran_gw" target="dr_reset_staffs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e10" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="dr_lane_db" source="dr_reset_staffs" target="dr_find_tasks">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e11" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="dr_find_tasks" target="dr_task_gw">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e12" value="task hợp lệ" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="dr_lane_cron" source="dr_task_gw" target="dr_chunk">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e13" value="skip hoặc hết task" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="dr_task_gw" target="dr_bulk_tasks">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e14" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="dr_chunk" target="dr_bulk_tasks">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e15" style="edgeStyle=orthogonalEdgeStyle;html=1;" edge="1" parent="dr_lane_db" source="dr_bulk_tasks" target="dr_bulk_staffs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_e16" style="edgeStyle=orthogonalEdgeStyle;html=1;dashed=1;" edge="1" parent="1" source="dr_bulk_staffs" target="dr_end">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

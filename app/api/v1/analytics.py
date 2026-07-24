@@ -11,8 +11,11 @@ from app.services.analytics_service import (
     list_pending_overloads,
     resolve_overload_log,
 )
+from app.services.websocket_manager import websocket_manager
 
 router = APIRouter(prefix="/api/v1/analytics", tags=["analytics"])
+
+OVERLOAD_RESOLVED_EVENT = "overload.resolved"
 
 
 @router.get(
@@ -84,5 +87,18 @@ async def resolve_overload_endpoint(
                 error_code=code,
             ) from exc
         raise
+
+    # The transaction has committed at this point. Notify every connected
+    # manager so each browser can invalidate the same REST query cache.
+    await websocket_manager.broadcast_json(
+        {
+            "type": OVERLOAD_RESOLVED_EVENT,
+            "payload": {
+                "log_id": result["log_id"],
+                "task_id": result["task_id"],
+                "action_taken": result["action_taken"],
+            },
+        }
+    )
 
     return success_response(data=result, message="Đã xử lý cảnh báo quá tải")

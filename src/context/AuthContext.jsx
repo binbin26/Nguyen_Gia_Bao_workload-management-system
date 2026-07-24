@@ -7,62 +7,84 @@ import {
   useState,
 } from "react";
 
-import { loginRequest, setAuthToken } from "../services/auth_api";
-
-const TOKEN_KEY = "auth_token";
-const USER_KEY = "auth_user";
+import {
+  getCurrentUser,
+  loginRequest,
+  logoutRequest,
+  onSessionExpired,
+} from "../services/auth_api";
 
 const AuthContext = createContext(null);
 
-function readStoredUser() {
-  const rawUser = localStorage.getItem(USER_KEY);
-  if (!rawUser) {
-    return null;
-  }
-
-  try {
-    return JSON.parse(rawUser);
-  } catch {
-    localStorage.removeItem(USER_KEY);
-    return null;
-  }
-}
-
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
-  const [user, setUser] = useState(readStoredUser);
+  // JWTs never enter React state or Web Storage. Only non-sensitive display and
+  // authorization metadata returned by /me is kept in memory.
+  const [user, setUser] = useState(null);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    setAuthToken(token);
-  }, [token]);
+    let isMounted = true;
 
-  const login = useCallback(async ({ username, password }) => {
-    const data = await loginRequest({ username, password });
-    localStorage.setItem(TOKEN_KEY, data.access_token);
-    localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-    setToken(data.access_token);
-    setUser(data.user);
-    setAuthToken(data.access_token);
-    return data.user;
+    // One-time migration cleanup from the previous Bearer/localStorage design.
+    // These values are never read; removing them limits exposure after upgrade.
+    try {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_user");
+    } catch {
+      // Some privacy modes disable Web Storage. Auth uses cookies and can
+      // continue safely even when legacy cleanup is unavailable.
+    }
+
+    const removeSessionExpiredListener = onSessionExpired(() => setUser(null));
+
+    getCurrentUser()
+      .then((currentUser) => {
+        if (isMounted) {
+          setUser(currentUser);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setUser(null);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsInitializing(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+      removeSessionExpiredListener();
+    };
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    setToken(null);
-    setUser(null);
-    setAuthToken(null);
+  const login = useCallback(async ({ username, password }) => {
+    const loggedInUser = await loginRequest({ username, password });
+    setUser(loggedInUser);
+    return loggedInUser;
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await logoutRequest();
+    } finally {
+      // Local state is always cleared even if the network is unavailable. The
+      // server-side refresh session remains bounded by its expiry in that case.
+      setUser(null);
+    }
   }, []);
 
   const value = useMemo(
     () => ({
-      token,
       user,
-      isAuthenticated: Boolean(token && user),
+      isAuthenticated: Boolean(user),
+      isInitializing,
       login,
       logout,
     }),
-    [login, logout, token, user],
+    [isInitializing, login, logout, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

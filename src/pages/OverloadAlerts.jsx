@@ -1,9 +1,11 @@
 import { AlertTriangle, Bot, RefreshCw, ShieldCheck } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
 import AIResolutionModal from "../components/analytics/AIResolutionModal";
 import OverloadCard from "../components/analytics/OverloadCard";
 import {
+  OVERLOAD_ALERTS_QUERY_KEY,
   getOverloadAlerts,
   resolveOverloadAlert,
 } from "../services/analytics_api";
@@ -35,36 +37,29 @@ function getErrorMessage(error, fallback) {
 }
 
 export default function OverloadAlerts() {
-  const [alerts, setAlerts] = useState([]);
+  const queryClient = useQueryClient();
+  const {
+    data: alerts = [],
+    error: alertsError,
+    isPending: isLoading,
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: OVERLOAD_ALERTS_QUERY_KEY,
+    queryFn: getOverloadAlerts,
+  });
+
   const [selectedAlert, setSelectedAlert] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [resolvingStaffId, setResolvingStaffId] = useState("");
-  const [error, setError] = useState("");
   const [modalError, setModalError] = useState("");
   const [toast, setToast] = useState(null);
 
-  const loadAlerts = async () => {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const data = await getOverloadAlerts();
-      setAlerts(data.filter(isPendingAlert));
-    } catch (err) {
-      setError(
-        getErrorMessage(
-          err,
-          "Không thể tải danh sách cảnh báo quá tải. Vui lòng thử lại.",
-        ),
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadAlerts();
-  }, []);
+  const error = alertsError
+    ? getErrorMessage(
+        alertsError,
+        "Không thể tải danh sách cảnh báo quá tải. Vui lòng thử lại.",
+      )
+    : "";
 
   useEffect(() => {
     if (!toast) {
@@ -105,8 +100,14 @@ export default function OverloadAlerts() {
 
     try {
       await resolveOverloadAlert(logId, selectedStaffId);
-      setAlerts((currentAlerts) =>
-        currentAlerts.filter((alert) => alertIdOf(alert) !== logId),
+      await queryClient.invalidateQueries(
+        {
+          queryKey: OVERLOAD_ALERTS_QUERY_KEY,
+          exact: true,
+        },
+        {
+          cancelRefetch: false,
+        },
       );
       setSelectedAlert(null);
       setToast({
@@ -143,12 +144,12 @@ export default function OverloadAlerts() {
 
         <button
           type="button"
-          onClick={loadAlerts}
-          disabled={isLoading}
+          onClick={() => void refetch()}
+          disabled={isFetching}
           className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <RefreshCw
-            className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+            className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
             aria-hidden="true"
           />
           Làm mới

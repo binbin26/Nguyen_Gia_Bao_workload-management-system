@@ -56,7 +56,7 @@ async def get_dashboard_summary_endpoint(
     **Ví dụ gọi API:**
     ```
     GET /api/v1/dashboard/summary?department=B
-    Authorization: Bearer <jwt_token>
+    Cookie: __Host-access_token=<HttpOnly JWT do trình duyệt tự gửi>
     ```
 
     **Response (200 OK):**

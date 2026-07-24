@@ -9,7 +9,17 @@ import OverloadAlerts from "./pages/OverloadAlerts";
 import TaskCenter from "./pages/TaskCenter";
 
 function LoginRoute() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, isInitializing, user } = useAuth();
+
+  if (isInitializing) {
+    return (
+      <main className="grid min-h-screen place-items-center bg-slate-50">
+        <p className="text-sm text-slate-600" role="status">
+          Đang kiểm tra phiên đăng nhập...
+        </p>
+      </main>
+    );
+  }
 
   if (isAuthenticated && user?.role === "manager") {
     return <Navigate replace to="/dashboard" />;

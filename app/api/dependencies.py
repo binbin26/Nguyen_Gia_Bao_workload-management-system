@@ -1,21 +1,17 @@
 from typing import Any
 
 import jwt
-from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends, HTTPException, Request
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from starlette import status
 
 from app.core.config import settings
 from app.core.database import get_database
 from app.core.exceptions import AppHTTPException
+from app.core.security import ACCESS_COOKIE_NAME, decode_token
 from app.repositories.log_repository import create_pending_overload_log
 
 WORKLOAD_CAP_EXCEEDED = "WORKLOAD_CAP_EXCEEDED"
-
-# HTTP Bearer security scheme for JWT
-security = HTTPBearer()
-
 
 def evaluate_workload_capacity(
     staff: dict,
@@ -138,28 +134,32 @@ async def verify_workload_capacity(
 # ============================================================================
 
 
-def get_current_user(creds: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+def get_current_user(request: Request) -> dict:
     """
-    Decode JWT token and return user payload.
+    Decode the access JWT from its HttpOnly cookie and return user payload.
 
     Raises 401 on token error (expired, invalid, malformed).
     """
-    try:
-        payload = jwt.decode(
-            creds.credentials,
-            settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM],
+    token = request.cookies.get(ACCESS_COOKIE_NAME)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Chưa đăng nhập hoặc phiên đăng nhập đã kết thúc",
+            headers={"WWW-Authenticate": "Cookie"},
         )
-        return payload
+    try:
+        return decode_token(token, expected_type="access")
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token đã hết hạn",
+            headers={"WWW-Authenticate": "Cookie"},
         )
     except jwt.InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token không hợp lệ",
+            headers={"WWW-Authenticate": "Cookie"},
         )
 
 
