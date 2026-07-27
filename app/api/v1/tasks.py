@@ -6,13 +6,16 @@ Per 03-sau-api-cot-loi.mdc §1 (POST /api/v1/tasks):
 - Resolve SOP, assign staff greedy, transaction-safe writes
 """
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from starlette import status
 
-from app.api.dependencies import get_current_user, require_role
+from app.api.dependencies import get_current_active_staff, get_current_manager
 from app.core.database import get_database, get_motor_client
 from app.core.exceptions import AppHTTPException
+from app.core.roles import AuthenticatedUser
 from app.repositories.task_repository import create_task, get_tasks
 from app.schemas.base_envelope import ApiResponse, success_response
 from app.schemas.task import (
@@ -36,11 +39,10 @@ router = APIRouter(prefix="/api/v1/tasks", tags=["tasks"])
 @router.get(
     "",
     response_model=ApiResponse[list[TaskOut]],
-    dependencies=[Depends(require_role("manager"))],
+    dependencies=[Depends(get_current_manager)],
     summary="Danh sách toàn bộ hồ sơ",
 )
 async def list_tasks_endpoint(
-    user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database),
 ) -> ApiResponse[list[TaskOut]]:
     tasks = await get_tasks(db)
@@ -50,7 +52,7 @@ async def list_tasks_endpoint(
 @router.post(
     "",
     response_model=ApiResponse[TaskCreateResponse],
-    dependencies=[Depends(require_role("staff", "manager"))],
+    dependencies=[Depends(get_current_active_staff)],
     summary="Tiếp nhận & tạo hồ sơ mới",
     description=(
         "Tạo hồ sơ công việc mới, tự động gán cho cán bộ rảnh nhất trong phòng ban "
@@ -60,7 +62,6 @@ async def list_tasks_endpoint(
 )
 async def create_task_endpoint(
     body: TaskCreateRequest,
-    user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database),
     client: AsyncIOMotorClient = Depends(get_motor_client),
 ) -> ApiResponse[TaskCreateResponse]:
@@ -99,7 +100,6 @@ async def create_task_endpoint(
 @router.post(
     "/{task_id}/next-step",
     response_model=ApiResponse[TaskNextStepResponse],
-    dependencies=[Depends(require_role("staff", "manager"))],
     summary="Luân chuyển bước (State Machine)",
     description=(
         "Hoàn thành bước hiện tại và chuyển sang bước kế tiếp trong quy trình SOP. "
@@ -109,7 +109,7 @@ async def create_task_endpoint(
 )
 async def next_step_endpoint(
     task_id: str,
-    user: dict = Depends(get_current_user),
+    user: Annotated[AuthenticatedUser, Depends(get_current_active_staff)],
     db: AsyncIOMotorDatabase = Depends(get_database),
     client: AsyncIOMotorClient = Depends(get_motor_client),
 ) -> ApiResponse[TaskNextStepResponse]:

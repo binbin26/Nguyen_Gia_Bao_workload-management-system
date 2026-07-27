@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Annotated, Any, Callable, TypeAlias, cast
 
 import jwt
 from fastapi import Depends, HTTPException, Request
@@ -8,10 +8,12 @@ from starlette import status
 from app.core.config import settings
 from app.core.database import get_database
 from app.core.exceptions import AppHTTPException
+from app.core.roles import AuthenticatedUser, RoleEnum
 from app.core.security import ACCESS_COOKIE_NAME, decode_token
 from app.repositories.log_repository import create_pending_overload_log
 
 WORKLOAD_CAP_EXCEEDED = "WORKLOAD_CAP_EXCEEDED"
+
 
 def evaluate_workload_capacity(
     staff: dict,
@@ -134,7 +136,7 @@ async def verify_workload_capacity(
 # ============================================================================
 
 
-def get_current_user(request: Request) -> dict:
+def get_current_user(request: Request) -> AuthenticatedUser:
     """
     Decode the access JWT from its HttpOnly cookie and return user payload.
 
@@ -148,7 +150,7 @@ def get_current_user(request: Request) -> dict:
             headers={"WWW-Authenticate": "Cookie"},
         )
     try:
-        return decode_token(token, expected_type="access")
+        payload = decode_token(token, expected_type="access")
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -162,19 +164,42 @@ def get_current_user(request: Request) -> dict:
             headers={"WWW-Authenticate": "Cookie"},
         )
 
+    try:
+        payload["role"] = RoleEnum(payload.get("role"))
+    except (TypeError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token không chứa vai trò hợp lệ",
+            headers={"WWW-Authenticate": "Cookie"},
+        ) from exc
 
-def require_role(*allowed_roles: str):
+    return cast(AuthenticatedUser, payload)
+
+
+RoleDependency: TypeAlias = Callable[[AuthenticatedUser], AuthenticatedUser]
+
+
+def require_role(*allowed_roles: RoleEnum) -> RoleDependency:
     """
     Dependency factory: check if current user has one of allowed roles.
 
     Usage:
-        @router.get("/protected", dependencies=[Depends(require_role("manager"))])
+        @router.get(
+            "/protected",
+            dependencies=[Depends(require_role(RoleEnum.MANAGER))],
+        )
         async def protected_endpoint():
             ...
     """
+    if not allowed_roles:
+        raise ValueError("require_role cần ít nhất một vai trò được phép")
 
-    def _check_role(user: dict = Depends(get_current_user)) -> dict:
-        if user.get("role") not in allowed_roles:
+    allowed_role_set = frozenset(allowed_roles)
+
+    def _check_role(
+        user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+    ) -> AuthenticatedUser:
+        if user["role"] not in allowed_role_set:
             raise AppHTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Không đủ quyền thực hiện thao tác này",
@@ -183,3 +208,38 @@ def require_role(*allowed_roles: str):
         return user
 
     return _check_role
+
+
+# Ready-to-use dependencies keep router declarations concise and typo-safe.
+get_current_manager: RoleDependency = require_role(RoleEnum.MANAGER)
+get_current_active_staff: RoleDependency = require_role(
+    RoleEnum.MANAGER,
+    RoleEnum.STAFF,
+)
+
+
+def verify_user_ownership(
+    staff_id: str,
+    user: Annotated[AuthenticatedUser, Depends(get_current_active_staff)],
+) -> AuthenticatedUser:
+    """Allow managers globally and staff only for their own ``staff_id``.
+
+    The application issues ``staff_id`` today. The fallback ``id`` claim keeps
+    this dependency compatible with tokens following the API contract in which
+    the staff identity is stored as ``user["id"]``.
+    """
+    if user["role"] == RoleEnum.MANAGER:
+        return user
+
+    token_staff_id = user.get("staff_id")
+    if token_staff_id is None:
+        token_staff_id = user.get("id")
+
+    if token_staff_id is None or str(token_staff_id) != staff_id:
+        raise AppHTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn chỉ được phép truy cập dữ liệu của chính mình",
+            error_code="FORBIDDEN_RESOURCE_OWNERSHIP",
+        )
+
+    return user

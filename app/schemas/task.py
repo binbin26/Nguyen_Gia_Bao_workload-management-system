@@ -18,6 +18,8 @@ class TaskStatus(str, Enum):
 class TaskMetrics(BaseModel):
     workload_score: float
     step_duration_hours: float
+    actual_spent_hours: float | None = None
+    rework_count: int = Field(0, ge=0)
     actual_duration_hours: float | None = None
     early_completion_hours: float | None = None
     remaining_step_hours: float | None = None

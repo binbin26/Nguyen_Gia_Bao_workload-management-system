@@ -26,6 +26,12 @@ async def connect_to_mongo() -> None:
     # records automatically; the compound index supports session cleanup/audit.
     await _db.refresh_sessions.create_index("expires_at", expireAfterSeconds=0)
     await _db.refresh_sessions.create_index([("user_id", 1), ("session_id", 1)])
+    # Equality on status followed by the completion-date range supports the
+    # first (and most selective) stage of the staff KPI aggregation.
+    await _db.tasks.create_index(
+        [("status", 1), ("timestamps.completed_at", -1)],
+        name="staff_kpi_completed_at_idx",
+    )
     try:
             logger.info(
             "Connected to MongoDB replica set '%s', database '%s'",

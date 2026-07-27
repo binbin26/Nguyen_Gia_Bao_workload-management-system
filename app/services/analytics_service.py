@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
@@ -10,6 +10,174 @@ from app.repositories.task_repository import get_task_by_id
 from app.schemas.overload_log import ManagerActionTaken
 
 logger = logging.getLogger(__name__)
+
+KPI_WINDOW_DAYS = 30
+
+
+def build_staff_kpi_pipeline(
+    period_start: datetime,
+    period_end: datetime,
+) -> list[dict[str, Any]]:
+    """Build the MongoDB-only aggregation used by the manager KPI dashboard.
+
+    Numeric fields are converted defensively so one malformed legacy task cannot
+    fail the whole report. ``actual_duration_hours`` is kept as a temporary
+    fallback while existing records are migrated to ``actual_spent_hours``.
+    """
+    return [
+        {
+            "$match": {
+                "status": "Hoàn thành",
+                "timestamps.completed_at": {
+                    "$gte": period_start,
+                    "$lte": period_end,
+                },
+            }
+        },
+        {
+            "$set": {
+                "_standard_hours": {
+                    "$max": [
+                        0,
+                        {
+                            "$convert": {
+                                "input": "$metrics.step_duration_hours",
+                                "to": "double",
+                                "onError": 0,
+                                "onNull": 0,
+                            }
+                        },
+                    ]
+                },
+                "_actual_hours": {
+                    "$max": [
+                        0,
+                        {
+                            "$convert": {
+                                "input": {
+                                    "$ifNull": [
+                                        "$metrics.actual_spent_hours",
+                                        "$metrics.actual_duration_hours",
+                                    ]
+                                },
+                                "to": "double",
+                                "onError": 0,
+                                "onNull": 0,
+                            }
+                        },
+                    ]
+                },
+                "_rework_count": {
+                    "$max": [
+                        0,
+                        {
+                            "$convert": {
+                                "input": "$metrics.rework_count",
+                                "to": "int",
+                                "onError": 0,
+                                "onNull": 0,
+                            }
+                        },
+                    ]
+                },
+            }
+        },
+        {
+            "$group": {
+                "_id": "$current_assigned_to",
+                "total_tasks": {"$sum": 1},
+                "total_standard_hours": {"$sum": "$_standard_hours"},
+                "total_actual_hours": {"$sum": "$_actual_hours"},
+                "total_rework_count": {"$sum": "$_rework_count"},
+                "reworked_tasks": {
+                    "$sum": {"$cond": [{"$gt": ["$_rework_count", 0]}, 1, 0]}
+                },
+            }
+        },
+        # Invalid legacy tasks must not become a synthetic "unknown employee" row.
+        {"$match": {"_id": {"$nin": [None, ""]}}},
+        {
+            "$lookup": {
+                "from": "staffs",
+                "localField": "_id",
+                "foreignField": "_id",
+                "as": "staff",
+            }
+        },
+        {"$set": {"staff": {"$first": "$staff"}}},
+        {
+            "$set": {
+                "efficiency_rate": {
+                    "$cond": [
+                        {"$gt": ["$total_actual_hours", 0]},
+                        {
+                            "$round": [
+                                {
+                                    "$multiply": [
+                                        {
+                                            "$divide": [
+                                                "$total_standard_hours",
+                                                "$total_actual_hours",
+                                            ]
+                                        },
+                                        100,
+                                    ]
+                                },
+                                2,
+                            ]
+                        },
+                        0,
+                    ]
+                },
+                "rework_rate": {
+                    "$round": [
+                        {
+                            "$multiply": [
+                                {"$divide": ["$reworked_tasks", "$total_tasks"]},
+                                100,
+                            ]
+                        },
+                        2,
+                    ]
+                },
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "staff_id": "$_id",
+                "staff_name": {"$ifNull": ["$staff.fullname", "$_id"]},
+                "department": {"$ifNull": ["$staff.department", None]},
+                "total_tasks": 1,
+                "total_standard_hours": {"$round": ["$total_standard_hours", 2]},
+                "total_actual_hours": {"$round": ["$total_actual_hours", 2]},
+                "efficiency_rate": 1,
+                "reworked_tasks": 1,
+                "total_rework_count": 1,
+                "rework_rate": 1,
+                "quality_score": {
+                    "$round": [{"$subtract": [100, "$rework_rate"]}, 2]
+                },
+            }
+        },
+        {"$sort": {"efficiency_rate": -1, "total_tasks": -1, "staff_name": 1}},
+    ]
+
+
+async def list_staff_kpis(
+    db: AsyncIOMotorDatabase,
+    *,
+    now: datetime | None = None,
+) -> list[dict[str, Any]]:
+    """Return pre-calculated KPI rows for completed tasks in the last 30 days."""
+    period_end = now or datetime.now(timezone.utc)
+    if period_end.tzinfo is None:
+        period_end = period_end.replace(tzinfo=timezone.utc)
+    period_start = period_end - timedelta(days=KPI_WINDOW_DAYS)
+
+    pipeline = build_staff_kpi_pipeline(period_start, period_end)
+    cursor = db.tasks.aggregate(pipeline, allowDiskUse=True)
+    return await cursor.to_list(length=None)
 
 
 def build_staff_suggestions(

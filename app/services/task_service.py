@@ -13,6 +13,7 @@ from typing import Any
 
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
+from app.core.roles import AuthenticatedUser, RoleEnum
 from app.repositories.log_repository import create_pending_overload_log
 from app.repositories.task_repository import (
     decrement_staff_task_count,
@@ -34,9 +35,12 @@ CATEGORY_NOT_FOUND = "CATEGORY_NOT_FOUND"
 _CLOSED_STATUSES = frozenset({"Hoàn thành", "Hủy"})
 
 
-def assert_can_complete_step(user: dict[str, Any], task: dict[str, Any]) -> None:
+def assert_can_complete_step(
+    user: AuthenticatedUser,
+    task: dict[str, Any],
+) -> None:
     """Object-level auth: assignee or manager may advance the current step."""
-    if user.get("role") == "manager":
+    if user["role"] == RoleEnum.MANAGER:
         return
     if user.get("staff_id") != task.get("current_assigned_to"):
         raise ValueError(FORBIDDEN_NOT_ASSIGNEE)
@@ -110,6 +114,7 @@ async def _complete_current_step(
     step_update: dict[str, Any] = {
         "workflow_history.$.status": "Hoàn thành",
         "workflow_history.$.completed_at": completed_at,
+        "metrics.actual_spent_hours": actual_hours,
         "metrics.actual_duration_hours": actual_hours,
     }
     if early_completion is not None:
@@ -155,7 +160,7 @@ async def advance_task_step(
     db: AsyncIOMotorDatabase,
     client: AsyncIOMotorClient,
     task_id: str,
-    user: dict[str, Any],
+    user: AuthenticatedUser,
 ) -> tuple[dict[str, Any], str, str | None]:
     """
     Advance a task to the next workflow step inside one ACID transaction.
@@ -200,7 +205,6 @@ async def advance_task_step(
                 {
                     "$set": {
                         "status": "Hoàn thành",
-                        "current_assigned_to": "",
                         "control_flags.is_locked": True,
                         "timestamps.completed_at": completed_at,
                     }
@@ -285,6 +289,7 @@ async def advance_task_step(
                     "current_assigned_to": new_staff_id,
                     "timestamps.due_at": new_due_at,
                     "metrics.step_duration_hours": next_duration,
+                    "metrics.actual_spent_hours": None,
                     "metrics.actual_duration_hours": None,
                     "metrics.early_completion_hours": None,
                     "metrics.remaining_step_hours": next_duration,

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import StatWidget from "../components/dashboard/StatWidget";
 import WorkloadHeatmap from "../components/dashboard/WorkloadHeatmap";
+import ManagerKPIDashboard from "../components/ManagerKPIDashboard";
 import { getStaffs } from "../services/staff_api.jsx";
 
 export default function Dashboard() {
@@ -128,6 +129,8 @@ export default function Dashboard() {
       ) : (
         <WorkloadHeatmap staffs={staffs} />
       )}
+
+      <ManagerKPIDashboard />
     </>
   );
 }

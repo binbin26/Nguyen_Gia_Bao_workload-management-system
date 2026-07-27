@@ -133,6 +133,8 @@ def _build_task_document(
         "metrics": {
             "workload_score": workload_score,
             "step_duration_hours": duration_hours,
+            "actual_spent_hours": None,
+            "rework_count": 0,
             "actual_duration_hours": None,
             "early_completion_hours": None,
             "remaining_step_hours": duration_hours,

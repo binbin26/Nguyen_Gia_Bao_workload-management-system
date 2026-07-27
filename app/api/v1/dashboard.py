@@ -11,7 +11,7 @@ Per 03-sau-api-cot-loi.mdc §3 (GET /api/v1/dashboard/summary):
 from fastapi import APIRouter, Depends, Query
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
-from app.api.dependencies import get_current_user, require_role
+from app.api.dependencies import get_current_manager
 from app.core.database import get_database
 from app.repositories.staff_repository import get_dashboard_summary
 from app.schemas.base_envelope import ApiResponse, success_response
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])
 @router.get(
     "/summary",
     response_model=ApiResponse[DashboardSummaryResponse],
-    dependencies=[Depends(require_role("manager"))],
+    dependencies=[Depends(get_current_manager)],
     summary="Giám sát tải lượng phòng ban",
     description="Endpoint thống kê số công việc và giờ làm việc thực tế của toàn bộ nhân viên theo phòng ban. Chỉ manager mới được phép truy cập.",
 )
@@ -33,7 +33,6 @@ async def get_dashboard_summary_endpoint(
         None,
         description="Lọc theo phòng ban (A, B, hoặc C). Nếu không truyền, thống kê tất cả phòng.",
     ),
-    user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database),
 ) -> ApiResponse[DashboardSummaryResponse]:
     """

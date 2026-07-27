@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, Response
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -8,6 +8,7 @@ from starlette import status
 from app.api.dependencies import get_current_user
 from app.core.database import get_database
 from app.core.exceptions import AppHTTPException
+from app.core.roles import AuthenticatedUser, RoleEnum
 from app.core.security import (
     REFRESH_COOKIE_NAME,
     clear_auth_cookies,
@@ -35,7 +36,7 @@ class LoginRequest(BaseModel):
 
 class AuthUser(BaseModel):
     username: str
-    role: Literal["manager", "staff"]
+    role: RoleEnum
     staff_id: str | None = None
 
 
@@ -142,7 +143,7 @@ async def refresh_session(
     summary="Lấy người dùng của phiên cookie hiện tại",
 )
 async def get_session_user(
-    user: dict = Depends(get_current_user),
+    user: Annotated[AuthenticatedUser, Depends(get_current_user)],
 ) -> ApiResponse[LoginResponse]:
     return success_response(
         data=LoginResponse(

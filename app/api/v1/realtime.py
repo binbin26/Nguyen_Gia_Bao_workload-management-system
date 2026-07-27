@@ -4,6 +4,7 @@ import jwt
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.core.config import settings
+from app.core.roles import RoleEnum
 from app.core.security import ACCESS_COOKIE_NAME, decode_token
 from app.services.websocket_manager import websocket_manager
 
@@ -28,7 +29,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
         await websocket.close(code=1008)
         return
 
-    if user.get("role") != "manager":
+    if user.get("role") != RoleEnum.MANAGER:
         await websocket.close(code=1008)
         return
 

@@ -1,13 +1,17 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from starlette import status
 
-from app.api.dependencies import get_current_user, require_role
+from app.api.dependencies import get_current_manager
 from app.core.database import get_database, get_motor_client
 from app.core.exceptions import AppHTTPException
+from app.core.roles import AuthenticatedUser
 from app.schemas.base_envelope import ApiResponse, success_response
 from app.schemas.overload_log import ManagerActionTaken, ResolveOverloadRequest
 from app.services.analytics_service import (
+    list_staff_kpis,
     list_pending_overloads,
     resolve_overload_log,
 )
@@ -19,13 +23,28 @@ OVERLOAD_RESOLVED_EVENT = "overload.resolved"
 
 
 @router.get(
+    "/staff-kpi",
+    response_model=ApiResponse[dict],
+    dependencies=[Depends(get_current_manager)],
+    summary="KPI nhân sự trong 30 ngày gần nhất",
+)
+async def get_staff_kpi(
+    db: AsyncIOMotorDatabase = Depends(get_database),
+) -> ApiResponse[dict]:
+    items = await list_staff_kpis(db)
+    return success_response(
+        data={"items": items, "period_days": 30},
+        message="Thống kê KPI nhân sự trong 30 ngày gần nhất",
+    )
+
+
+@router.get(
     "/overloads",
     response_model=ApiResponse[dict],
-    dependencies=[Depends(require_role("manager"))],
+    dependencies=[Depends(get_current_manager)],
     summary="Danh sách cảnh báo quá tải chờ xử lý",
 )
 async def get_pending_overloads(
-    user: dict = Depends(get_current_user),
     db: AsyncIOMotorDatabase = Depends(get_database),
 ) -> ApiResponse[dict]:
     items = await list_pending_overloads(db)
@@ -35,13 +54,12 @@ async def get_pending_overloads(
 @router.post(
     "/overloads/{log_id}/resolve",
     response_model=ApiResponse[dict],
-    dependencies=[Depends(require_role("manager"))],
     summary="Phê duyệt điều chuyển hồ sơ",
 )
 async def resolve_overload_endpoint(
     log_id: str,
     body: ResolveOverloadRequest,
-    user: dict = Depends(get_current_user),
+    user: Annotated[AuthenticatedUser, Depends(get_current_manager)],
     db: AsyncIOMotorDatabase = Depends(get_database),
     client: AsyncIOMotorClient = Depends(get_motor_client),
 ) -> ApiResponse[dict]:
