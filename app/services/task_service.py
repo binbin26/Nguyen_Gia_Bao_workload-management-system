@@ -253,8 +253,25 @@ async def advance_task_step(
                 {
                     "$set": {
                         "status": "Tạm dừng",
+                        "current_step": next_step_number,
+                        "current_department": next_dept,
                         "current_assigned_to": "",
-                    }
+                        "timestamps.due_at": new_due_at,
+                        "metrics.step_duration_hours": next_duration,
+                        "metrics.actual_spent_hours": None,
+                        "metrics.actual_duration_hours": None,
+                        "metrics.early_completion_hours": None,
+                        "metrics.remaining_step_hours": next_duration,
+                    },
+                    "$push": {
+                        "workflow_history": {
+                            "step_number": next_step_number,
+                            "department": next_dept,
+                            "assigned_to": "",
+                            "status": "Tạm dừng",
+                            "completed_at": None,
+                        }
+                    },
                 },
                 session=session,
             )

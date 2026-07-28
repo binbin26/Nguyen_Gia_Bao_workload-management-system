@@ -1,127 +1,204 @@
-"""
-Staff repository — MongoDB Motor operations on staffs collection.
+"""MongoDB queries for staff workload monitoring.
 
-Per 03-sau-api-cot-loi.mdc §3 (Dashboard Summary):
-Dùng MongoDB Aggregation Pipeline thay vì loop Python để tổng hợp dữ liệu,
-không bao giờ dùng vòng lặp Python để cộng dồn thủ công.
+``staff.status`` exists in legacy documents, but it is not a reliable source for
+the live workload state: counters are changed by task assignment/reset flows
+without updating that field.  Every read used by the dashboards therefore
+normalizes the counters and derives the workload status in MongoDB.
 """
+
+from __future__ import annotations
+
+from typing import Any, Optional
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from typing import Optional
 
 from app.schemas.staff import Department
 
+DEFAULT_MAX_DAILY_TASKS = 5
+DEFAULT_MAX_DAILY_HOURS = 8.0
 
-async def get_staffs(db: AsyncIOMotorDatabase) -> list[dict]:
-    """
-    Retrieve all staff documents for manager workload monitoring.
 
-    Sorted by department then fullname so the dashboard renders consistently.
-    """
-    return await db.staffs.find({}).sort(
-        [("department", 1), ("fullname", 1)]
-    ).to_list(None)
+def _number_expression(path: str, target_type: str, default: int | float) -> dict[str, Any]:
+    """Convert legacy numeric/string values without failing an aggregation."""
+    return {
+        "$max": [
+            0,
+            {
+                "$convert": {
+                    "input": path,
+                    "to": target_type,
+                    "onError": default,
+                    "onNull": default,
+                }
+            },
+        ]
+    }
+
+
+def staff_workload_normalization_stages() -> list[dict[str, Any]]:
+    """Return reusable stages that normalize counters and derive live status."""
+    return [
+        {
+            "$set": {
+                "workload_caps": {
+                    "max_daily_tasks": _number_expression(
+                        "$workload_caps.max_daily_tasks",
+                        "int",
+                        DEFAULT_MAX_DAILY_TASKS,
+                    ),
+                    "max_daily_hours": _number_expression(
+                        "$workload_caps.max_daily_hours",
+                        "double",
+                        DEFAULT_MAX_DAILY_HOURS,
+                    ),
+                    "current_daily_tasks": _number_expression(
+                        "$workload_caps.current_daily_tasks",
+                        "int",
+                        0,
+                    ),
+                    "current_daily_hours": _number_expression(
+                        "$workload_caps.current_daily_hours",
+                        "double",
+                        0.0,
+                    ),
+                }
+            }
+        },
+        {
+            "$set": {
+                "status": {
+                    "$switch": {
+                        "branches": [
+                            # Leave is an availability state and takes precedence.
+                            {
+                                "case": {"$eq": ["$status", "Nghỉ phép"]},
+                                "then": "Nghỉ phép",
+                            },
+                            {
+                                "case": {
+                                    "$or": [
+                                        {
+                                            # Reaching the task-count cap means
+                                            # "Bận" (cannot accept another task),
+                                            # while exceeding it is anomalous
+                                            # and must be surfaced as overload.
+                                            "$gt": [
+                                                "$workload_caps.current_daily_tasks",
+                                                "$workload_caps.max_daily_tasks",
+                                            ]
+                                        },
+                                        {
+                                            "$gte": [
+                                                "$workload_caps.current_daily_hours",
+                                                "$workload_caps.max_daily_hours",
+                                            ]
+                                        },
+                                    ]
+                                },
+                                "then": "Quá tải",
+                            },
+                            {
+                                "case": {
+                                    "$or": [
+                                        {
+                                            "$gt": [
+                                                "$workload_caps.current_daily_tasks",
+                                                0,
+                                            ]
+                                        },
+                                        {
+                                            "$gt": [
+                                                "$workload_caps.current_daily_hours",
+                                                0,
+                                            ]
+                                        },
+                                    ]
+                                },
+                                "then": "Bận",
+                            },
+                        ],
+                        "default": "Sẵn sàng",
+                    }
+                }
+            }
+        },
+    ]
+
+
+def build_staff_list_pipeline(
+    departments: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Build the canonical staff read pipeline used by both dashboards."""
+    pipeline: list[dict[str, Any]] = []
+    if departments:
+        pipeline.append({"$match": {"department": {"$in": sorted(departments)}}})
+    pipeline.extend(staff_workload_normalization_stages())
+    pipeline.append({"$sort": {"department": 1, "fullname": 1}})
+    return pipeline
+
+
+async def get_staffs(
+    db: AsyncIOMotorDatabase,
+    *,
+    departments: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Return staff with defensive numeric fields and a live workload status."""
+    return await db.staffs.aggregate(
+        build_staff_list_pipeline(departments)
+    ).to_list(length=None)
 
 
 async def get_dashboard_summary(
     db: AsyncIOMotorDatabase,
     department: Optional[Department] = None,
-) -> dict:
-    """
-    Retrieve real-time workload summary per department using MongoDB aggregation.
+) -> list[dict[str, Any]]:
+    """Aggregate department totals from the same normalized staff snapshot."""
+    departments = {department} if department else None
+    pipeline = build_staff_list_pipeline(departments)
 
-    Uses $match (optional by dept) → $group to compute:
-    - Total current_daily_tasks across all staff in dept
-    - Total current_daily_hours across all staff in dept
-    - Number of staff by status
-    - Average ETC (current_daily_hours mean)
-
-    Args:
-        db: Motor async database
-        department: Filter by dept (A, B, or C), or None for all depts
-
-    Returns:
-        List of aggregated documents, one per department (or one if dept specified).
-        Example:
+    # The staff-list sort is irrelevant before grouping.
+    pipeline.pop()
+    pipeline.extend(
         [
             {
-                "_id": "A",
-                "total_tasks": 10,
-                "total_hours": 25.5,
-                "staff_count": 4,
-                "avg_hours": 6.375,
-                "by_status": [
-                    {"status": "Sẵn sàng", "count": 2},
-                    {"status": "Bận", "count": 1},
-                    ...
-                ]
-            }
-        ]
-    """
-    pipeline = []
-
-    # Step 1: Filter by department if specified
-    if department:
-        pipeline.append({"$match": {"department": department}})
-
-    # Step 2: Group by department, compute totals and stats
-    pipeline.append(
-        {
-            "$group": {
-                "_id": "$department",
-                "total_tasks": {
-                    "$sum": "$workload_caps.current_daily_tasks"
-                },
-                "total_hours": {
-                    "$sum": "$workload_caps.current_daily_hours"
-                },
-                "staff_count": {"$sum": 1},
-                "avg_hours": {
-                    "$avg": "$workload_caps.current_daily_hours"
-                },
-                "statuses": {"$push": "$status"},
-            }
-        }
-    )
-
-    # Step 3: Compute status breakdown
-    pipeline.append(
-        {
-            "$addFields": {
-                "by_status": {
-                    "$map": {
-                        "input": {
-                            "$setUnion": [
-                                [],
-                                "$statuses",
-                            ]  # Get unique statuses
-                        },
-                        "as": "status",
-                        "in": {
-                            "status": "$$status",
-                            "count": {
-                                "$size": {
-                                    "$filter": {
-                                        "input": "$statuses",
-                                        "as": "s",
-                                        "cond": {
-                                            "$eq": ["$$s", "$$status"]
-                                        },
+                "$group": {
+                    "_id": "$department",
+                    "total_tasks": {"$sum": "$workload_caps.current_daily_tasks"},
+                    "total_hours": {"$sum": "$workload_caps.current_daily_hours"},
+                    "staff_count": {"$sum": 1},
+                    "avg_hours": {"$avg": "$workload_caps.current_daily_hours"},
+                    "statuses": {"$push": "$status"},
+                }
+            },
+            {
+                "$set": {
+                    "by_status": {
+                        "$map": {
+                            "input": {"$setUnion": [[], "$statuses"]},
+                            "as": "status",
+                            "in": {
+                                "status": "$$status",
+                                "count": {
+                                    "$size": {
+                                        "$filter": {
+                                            "input": "$statuses",
+                                            "as": "candidate_status",
+                                            "cond": {
+                                                "$eq": [
+                                                    "$$candidate_status",
+                                                    "$$status",
+                                                ]
+                                            },
+                                        }
                                     }
-                                }
+                                },
                             },
-                        },
+                        }
                     }
                 }
-            }
-        }
+            },
+            {"$project": {"statuses": 0}},
+            {"$sort": {"_id": 1}},
+        ]
     )
-
-    # Step 4: Clean up intermediate field
-    pipeline.append({"$project": {"statuses": 0}})
-
-    # Step 5: Sort by department for consistency
-    pipeline.append({"$sort": {"_id": 1}})
-
-    result = await db.staffs.aggregate(pipeline).to_list(None)
-    return result
+    return await db.staffs.aggregate(pipeline).to_list(length=None)

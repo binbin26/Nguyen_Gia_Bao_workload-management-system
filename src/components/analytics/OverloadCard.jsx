@@ -54,6 +54,8 @@ export default function OverloadCard({ alert, onResolve }) {
   const alertId = alertIdOf(alert);
   const suggestions = getSuggestions(alert);
   const task = alert?.task || {};
+  const isCapacitySnapshot = alert?.alert_type === "staff_capacity";
+  const isResolvable = alert?.resolvable !== false;
 
   return (
     <article className="rounded-lg border border-amber-200 bg-amber-50 p-5 shadow-sm ring-1 ring-amber-100">
@@ -62,7 +64,7 @@ export default function OverloadCard({ alert, onResolve }) {
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 ring-1 ring-amber-200">
               <FileWarning className="h-3.5 w-3.5" aria-hidden="true" />
-              Cần điều phối
+              {isCapacitySnapshot ? "Chạm trần tải lượng" : "Cần điều phối"}
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-md bg-white/75 px-2.5 py-1 text-xs font-medium text-slate-600 ring-1 ring-amber-100">
               <CalendarClock className="h-3.5 w-3.5" aria-hidden="true" />
@@ -85,7 +87,11 @@ export default function OverloadCard({ alert, onResolve }) {
           className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-md bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           <Bot className="h-4 w-4" aria-hidden="true" />
-          Xử lý điều phối
+          {isCapacitySnapshot
+            ? isResolvable
+              ? "Xem và áp dụng gợi ý"
+              : "Xem gợi ý tải lượng"
+            : "Xử lý điều phối"}
         </button>
       </div>
 
@@ -93,7 +99,9 @@ export default function OverloadCard({ alert, onResolve }) {
         <div className="rounded-md bg-white/80 px-3 py-2 ring-1 ring-amber-100">
           <dt className="text-xs font-medium text-slate-500">Mã hồ sơ</dt>
           <dd className="mt-1 truncate text-sm font-semibold text-slate-950">
-            {getTaskLabel(alert)}
+            {isCapacitySnapshot && !task.task_id
+              ? "Chưa gắn hồ sơ"
+              : getTaskLabel(alert)}
           </dd>
         </div>
         <div className="rounded-md bg-white/80 px-3 py-2 ring-1 ring-amber-100">

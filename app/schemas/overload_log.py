@@ -40,3 +40,9 @@ class OverloadLogInDB(OverloadLogOut):
 class ResolveOverloadRequest(BaseModel):
     action_taken: ManagerActionTaken
     selected_staff_id: str | None = None
+
+
+class ApplyCapacitySuggestionRequest(BaseModel):
+    """Apply a suggested staff-to-staff workload rebalance."""
+
+    selected_staff_id: str = Field(..., min_length=1)

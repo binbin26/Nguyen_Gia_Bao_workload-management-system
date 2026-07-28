@@ -9,7 +9,7 @@ from app.core.config import settings
 from app.repositories.staff_repository import get_dashboard_summary
 
 
-async def test_dashboard_aggregation():
+async def _run_dashboard_aggregation():
     """Test aggregation pipeline trên dữ liệu thực."""
     # Kết nối tới MongoDB
     client = AsyncIOMotorClient(
@@ -48,5 +48,10 @@ async def test_dashboard_aggregation():
     finally:
         client.close()
 
+
+def test_dashboard_aggregation():
+    """Run the async MongoDB integration check without a pytest async plugin."""
+    asyncio.run(_run_dashboard_aggregation())
+
 if __name__ == "__main__":
-    asyncio.run(test_dashboard_aggregation())
+    test_dashboard_aggregation()

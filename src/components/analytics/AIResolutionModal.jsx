@@ -62,6 +62,11 @@ export default function AIResolutionModal({
   const suggestions = getSuggestions(alert);
   const task = alert?.task || {};
   const isResolving = Boolean(resolvingStaffId);
+  const isResolvable = alert?.resolvable !== false;
+  const isCapacitySnapshot = alert?.alert_type === "staff_capacity";
+  const suggestedTransfer = alert?.suggested_transfer || {};
+  const impactedStaff =
+    alert?.staff_name || alert?.staff_id || "nhân sự đang chạm trần";
 
   return (
     <div className="fixed inset-0 z-50">
@@ -81,7 +86,9 @@ export default function AIResolutionModal({
                 AI-powered Decision Support
               </p>
               <h2 className="mt-2 text-xl font-semibold tracking-normal">
-                Gợi ý điều chuyển hồ sơ {task.task_code || task.task_id || ""}
+                {isCapacitySnapshot
+                  ? `Gợi ý cân bằng tải cho ${impactedStaff}`
+                  : `Gợi ý điều chuyển hồ sơ ${task.task_code || task.task_id || ""}`}
               </h2>
               <p className="mt-2 text-sm leading-6 text-slate-300">
                 matching_score = 1.0 - (current_daily_hours / max_daily_hours)
@@ -106,6 +113,25 @@ export default function AIResolutionModal({
               role="alert"
             >
               {error}
+            </div>
+          ) : null}
+
+          {isCapacitySnapshot && isResolvable ? (
+            <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm leading-6 text-emerald-800">
+              Khi áp dụng, hệ thống sẽ chuyển{" "}
+              <strong>
+                {Number(suggestedTransfer?.daily_tasks || 0)} tác vụ và{" "}
+                {Number(suggestedTransfer?.daily_hours || 0).toFixed(1)} giờ
+              </strong>{" "}
+              tải lượng sang nhân sự được chọn, kiểm tra lại sức chứa trong
+              transaction và ghi log quyết định của quản lý.
+            </div>
+          ) : null}
+
+          {isCapacitySnapshot && !isResolvable ? (
+            <div className="mb-4 rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-sm leading-6 text-sky-800">
+              Đây là cảnh báo tải lượng tổng hợp trực tiếp từ dữ liệu nhân sự.
+              Hiện chưa có ứng viên đủ sức chứa để áp dụng cân bằng tải.
             </div>
           ) : null}
 
@@ -173,26 +199,48 @@ export default function AIResolutionModal({
                           <p className="mt-2 text-xs text-slate-500">
                             {Number(candidate?.current_daily_tasks || 0)} tác vụ
                             đang giữ hôm nay
+                            {isCapacitySnapshot ? (
+                              <>
+                                {" → dự kiến "}
+                                {Number(candidate?.projected_daily_tasks || 0)}
+                                {" tác vụ, "}
+                                {Number(
+                                  candidate?.projected_daily_hours || 0,
+                                ).toFixed(1)}
+                                h
+                              </>
+                            ) : null}
                           </p>
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => onApprove(alertIdOf(alert), staffId)}
-                        disabled={!staffId || isResolving}
-                        className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-                      >
-                        {isCurrentResolving ? (
-                          <LoaderCircle
-                            className="h-4 w-4 animate-spin"
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
-                        )}
-                        Phê duyệt điều chuyển
-                      </button>
+                      {isResolvable ? (
+                        <button
+                          type="button"
+                          onClick={() => onApprove(alertIdOf(alert), staffId)}
+                          disabled={!staffId || isResolving}
+                          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                        >
+                          {isCurrentResolving ? (
+                            <LoaderCircle
+                              className="h-4 w-4 animate-spin"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <CheckCircle2
+                              className="h-4 w-4"
+                              aria-hidden="true"
+                            />
+                          )}
+                          {isCapacitySnapshot
+                            ? "Áp dụng gợi ý"
+                            : "Phê duyệt điều chuyển"}
+                        </button>
+                      ) : (
+                        <span className="inline-flex h-11 shrink-0 items-center justify-center rounded-md border border-sky-200 bg-sky-50 px-4 text-sm font-semibold text-sky-700">
+                          Không thể áp dụng
+                        </span>
+                      )}
                     </div>
                   </article>
                 );

@@ -717,9 +717,18 @@ def main():
     db.tasks.create_index([("status", ASCENDING)])
     db.tasks.create_index([("current_department", ASCENDING)])
     db.tasks.create_index([("current_assigned_to", ASCENDING)])
+    db.tasks.create_index([
+        ("current_assigned_to", ASCENDING),
+        ("status", ASCENDING),
+        ("timestamps.created_at", ASCENDING),
+    ])
 
     db.overload_logs.create_index([("staff_id", ASCENDING)])
     db.overload_logs.create_index([("timestamp", ASCENDING)])
+    db.overload_logs.create_index([
+        ("manager_action.action_taken", ASCENDING),
+        ("timestamp", ASCENDING),
+    ])
 
     db.users.create_index([("role", ASCENDING)])
     db.users.create_index([("staff_id", ASCENDING)])

@@ -6,6 +6,7 @@ import AIResolutionModal from "../components/analytics/AIResolutionModal";
 import OverloadCard from "../components/analytics/OverloadCard";
 import {
   OVERLOAD_ALERTS_QUERY_KEY,
+  applyCapacitySuggestion,
   getOverloadAlerts,
   resolveOverloadAlert,
 } from "../services/analytics_api";
@@ -90,7 +91,13 @@ export default function OverloadAlerts() {
   };
 
   const handleApprove = async (logId, selectedStaffId) => {
-    if (!logId || !selectedStaffId) {
+    const isCapacityAlert = selectedAlert?.alert_type === "staff_capacity";
+    const sourceStaffId = selectedAlert?.staff_id || "";
+
+    if (
+      !selectedStaffId ||
+      (isCapacityAlert ? !sourceStaffId : !logId)
+    ) {
       setModalError("Không xác định được cảnh báo hoặc nhân sự cần điều chuyển.");
       return;
     }
@@ -99,7 +106,11 @@ export default function OverloadAlerts() {
     setModalError("");
 
     try {
-      await resolveOverloadAlert(logId, selectedStaffId);
+      if (isCapacityAlert) {
+        await applyCapacitySuggestion(sourceStaffId, selectedStaffId);
+      } else {
+        await resolveOverloadAlert(logId, selectedStaffId);
+      }
       await queryClient.invalidateQueries(
         {
           queryKey: OVERLOAD_ALERTS_QUERY_KEY,
@@ -112,7 +123,9 @@ export default function OverloadAlerts() {
       setSelectedAlert(null);
       setToast({
         type: "success",
-        message: "Đã luân chuyển hồ sơ thành công!",
+        message: isCapacityAlert
+          ? "Đã áp dụng gợi ý cân bằng tải thành công!"
+          : "Đã luân chuyển hồ sơ thành công!",
       });
     } catch (err) {
       setModalError(

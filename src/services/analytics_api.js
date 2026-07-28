@@ -56,3 +56,14 @@ export async function resolveOverloadAlert(logId, selectedStaffId) {
 
   return response.data?.data || response.data;
 }
+
+export async function applyCapacitySuggestion(staffId, selectedStaffId) {
+  const response = await authHttp.post(
+    `/api/v1/analytics/overloads/capacity/${encodeURIComponent(staffId)}/apply`,
+    {
+      selected_staff_id: selectedStaffId,
+    },
+  );
+
+  return response.data?.data || response.data;
+}

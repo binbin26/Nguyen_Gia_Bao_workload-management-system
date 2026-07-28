@@ -6,3 +6,7 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 test-results/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+venv/
